@@ -4,11 +4,11 @@ WORKDIR /app
 RUN apt update
 RUN apt install -y libssl-dev pkg-config
 COPY . .
-WORKDIR /app/pv-mock
+WORKDIR /app/pv-installation
 RUN cargo build --release
 
-FROM debian:buster-slim
+FROM debian:bullseye-slim
 RUN apt update
 RUN apt install -y libssl-dev pkg-config
-COPY --from=chef app/target/release/pv-mock /usr/local/bin/
-CMD ["/usr/local/bin/pv-mock"]
+COPY --from=chef app/target/release/pv-installation /usr/local/bin/
+CMD ["/usr/local/bin/pv-installation"]
