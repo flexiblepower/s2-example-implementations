@@ -1,0 +1,10 @@
+services:
+  pv-installation:
+    build: ./pv-installation
+    environment:
+      # Provide the URL to your CEM here; this should be a WebSocket endpoint
+      - CEM_URL=ws://localhost:1234
+      # Supported values:
+      # - PEBC: PV installation that can curtail
+      # - NOT_CONTROLABLE: PV installation without the option to curtail
+      - CONTROL_TYPE=PEBC
