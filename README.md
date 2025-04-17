@@ -12,4 +12,4 @@ These implementations are useful when testing your own S2 implementation: if you
 
 Currently, we provide the following example implementations:
 - `pv-installation` simulates a PV installation of 2000 Wp. It can simulate both a curtailable PV installation (`PEBC`) and a non-curtailable PV installation (`NOT_CONTROLABLE`).
-- Heat pump and battery implementations to come soon!
+- `battery` simulates a home battery with a capacity of 20 kWh. As it's a storage device, it implements `FRBC` and is a great way to test your `FRBC` implementation.

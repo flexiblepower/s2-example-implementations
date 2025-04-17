@@ -76,8 +76,9 @@ pub async fn start_mock(mut connection: S2Connection) -> eyre::Result<()> {
 
 const CHARGE_EFFICIENCY: f64 = 1.0;
 const DISCHARGE_EFFICIENCY: f64 = 1.0;
-const LEAKAGE_W: f64 = 1000.;
-const INITIAL_FILL_LEVEL: f64 = 0.0;
+const CAPACITY_WH: f64 = 20_000.0;
+const LEAKAGE_W: f64 = 0.5;
+const INITIAL_FILL_LEVEL: f64 = 0.5;
 
 // Generate the IDs for our operation modes.
 // These should be kept consistent during the simulation, so that's why they're const here.
@@ -130,8 +131,8 @@ impl Simulator {
             elements: vec![OperationModeElement {
                 running_costs: None,
                 fill_rate: NumberRange {
-                    start_of_range: CHARGE_EFFICIENCY * (0.5 / 3600.),
-                    end_of_range: CHARGE_EFFICIENCY * (0.5 / 3600.),
+                    start_of_range: CHARGE_EFFICIENCY * ((5000.0 / CAPACITY_WH) / 3600.),
+                    end_of_range: 0.5 * CHARGE_EFFICIENCY * (5000.0 / CAPACITY_WH / 3600.),
                 },
                 fill_level_range: NumberRange {
                     start_of_range: 0.0,
@@ -140,7 +141,7 @@ impl Simulator {
                 power_ranges: vec![PowerRange {
                     commodity_quantity: CommodityQuantity::ElectricPower3PhaseSymmetric,
                     start_of_range: 5000.,
-                    end_of_range: 5000.,
+                    end_of_range: 0.5 * 5000.,
                 }],
             }],
             id: OPERATION_MODE_CHARGE.clone(),
@@ -152,8 +153,8 @@ impl Simulator {
             elements: vec![OperationModeElement {
                 running_costs: None,
                 fill_rate: NumberRange {
-                    start_of_range: -DISCHARGE_EFFICIENCY * (0.5 / 3600.),
-                    end_of_range: -DISCHARGE_EFFICIENCY * (0.5 / 3600.),
+                    start_of_range: DISCHARGE_EFFICIENCY * ((5000.0 / CAPACITY_WH) / 3600.),
+                    end_of_range: 0.5 * DISCHARGE_EFFICIENCY * (5000.0 / CAPACITY_WH / 3600.),
                 },
                 fill_level_range: NumberRange {
                     start_of_range: 0.0,
@@ -162,7 +163,7 @@ impl Simulator {
                 power_ranges: vec![PowerRange {
                     commodity_quantity: CommodityQuantity::ElectricPower3PhaseSymmetric,
                     start_of_range: -5000.,
-                    end_of_range: -5000.,
+                    end_of_range: 0.5 * -5000.,
                 }],
             }],
             id: OPERATION_MODE_DISCHARGE.clone(),
@@ -276,7 +277,7 @@ impl Simulator {
                     start_of_range: 0.0,
                     end_of_range: 1.0,
                 },
-                leakage_rate: LEAKAGE_W / 3600.,
+                leakage_rate: (LEAKAGE_W / CAPACITY_WH) / 3600.,
             }],
             message_id: Id::generate(),
             valid_from: Utc::now(),
