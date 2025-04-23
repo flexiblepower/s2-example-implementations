@@ -82,13 +82,13 @@ const INITIAL_FILL_LEVEL: f64 = 0.5;
 
 // Generate the IDs for our operation modes.
 // These should be kept consistent during the simulation, so that's why they're const here.
-const OPERATION_MODE_IDLE: LazyLock<Id> =
+static OPERATION_MODE_IDLE: LazyLock<Id> =
     LazyLock::new(|| Id::from_str(&uuid::Uuid::new_v4().to_string()).unwrap());
-const OPERATION_MODE_CHARGE: LazyLock<Id> =
+static OPERATION_MODE_CHARGE: LazyLock<Id> =
     LazyLock::new(|| Id::from_str(&uuid::Uuid::new_v4().to_string()).unwrap());
-const OPERATION_MODE_DISCHARGE: LazyLock<Id> =
+static OPERATION_MODE_DISCHARGE: LazyLock<Id> =
     LazyLock::new(|| Id::from_str(&uuid::Uuid::new_v4().to_string()).unwrap());
-const ACTUATOR_1: LazyLock<Id> =
+static ACTUATOR_1: LazyLock<Id> =
     LazyLock::new(|| Id::from_str(&uuid::Uuid::new_v4().to_string()).unwrap());
 
 pub struct Simulator {

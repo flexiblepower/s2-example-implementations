@@ -95,7 +95,7 @@ pub async fn start_mock(mut connection: S2Connection) -> eyre::Result<()> {
 
                     for element in &envelope.power_envelope_elements {
                         let end_time = base_time + TimeDelta::milliseconds(element.duration.0 as i64);
-                        simulator.add_constraint(base_time, end_time, element.lower_limit);
+                        simulator.add_constraint(base_time, end_time, element.lower_limit, element.upper_limit);
                     }
                 }
 
@@ -159,7 +159,8 @@ pub async fn start_mock(mut connection: S2Connection) -> eyre::Result<()> {
 const POWER_IN_W: f64 = 2000.;
 
 struct PvConstraint {
-    limit: f64,
+    lower_limit: f64,
+    upper_limit: f64,
     start_time: DateTime<Utc>,
     end_time: DateTime<Utc>,
 }
@@ -206,10 +207,13 @@ impl PvSimulator {
             .duration_round(TimeDelta::hours(1))
             .unwrap();
 
+        let (lower_limit, upper_limit) = self.get_current_constraints();
+
         self.profile
             .get(&rounded_time)
             .unwrap()
-            .min(self.get_current_constraint())
+            .max(lower_limit)
+            .min(upper_limit)
             * POWER_IN_W
     }
 
@@ -220,36 +224,41 @@ impl PvSimulator {
             .duration_round(TimeDelta::hours(1))
             .unwrap();
 
+        let (lower_limit, upper_limit) = self.get_current_constraints();
+
         (0..24)
             .map(|offset| {
                 let offset_time = rounded_time + TimeDelta::hours(offset + 1);
                 self.profile
                     .get(&offset_time)
                     .unwrap()
-                    .min(self.get_current_constraint())
+                    .max(lower_limit)
+                    .min(upper_limit)
                     * POWER_IN_W
             })
             .collect()
     }
 
-    fn get_current_constraint(&self) -> f64 {
+    fn get_current_constraints(&self) -> (f64, f64) {
         for constraint in &self.constraints {
             if constraint.start_time <= Utc::now() && constraint.end_time >= Utc::now() {
-                return constraint.limit;
+                return (constraint.lower_limit, constraint.upper_limit);
             }
         }
 
-        1.0
+        (-1.0, 1.0)
     }
 
     pub fn add_constraint(
         &mut self,
         start_time: DateTime<Utc>,
         end_time: DateTime<Utc>,
-        limit: f64,
+        lower_limit: f64,
+        upper_limit: f64,
     ) {
         self.constraints.push(PvConstraint {
-            limit,
+            lower_limit: lower_limit / POWER_IN_W,
+            upper_limit: upper_limit / POWER_IN_W,
             start_time,
             end_time,
         });
