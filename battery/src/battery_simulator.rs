@@ -131,8 +131,8 @@ impl Simulator {
             elements: vec![OperationModeElement {
                 running_costs: None,
                 fill_rate: NumberRange {
-                    start_of_range: CHARGE_EFFICIENCY * ((5000.0 / CAPACITY_WH) / 3600.),
-                    end_of_range: 0.5 * CHARGE_EFFICIENCY * (5000.0 / CAPACITY_WH / 3600.),
+                    start_of_range: 0.5 * CHARGE_EFFICIENCY * ((5000.0 / CAPACITY_WH) / 3600.),
+                    end_of_range: CHARGE_EFFICIENCY * (5000.0 / CAPACITY_WH / 3600.),
                 },
                 fill_level_range: NumberRange {
                     start_of_range: 0.0,
@@ -140,8 +140,8 @@ impl Simulator {
                 },
                 power_ranges: vec![PowerRange {
                     commodity_quantity: CommodityQuantity::ElectricPower3PhaseSymmetric,
-                    start_of_range: 5000.,
-                    end_of_range: 0.5 * 5000.,
+                    start_of_range: 0.5 * 5000.,
+                    end_of_range: 5000.,
                 }],
             }],
             id: OPERATION_MODE_CHARGE.clone(),
