@@ -224,16 +224,12 @@ impl PvSimulator {
             .duration_round(TimeDelta::hours(1))
             .unwrap();
 
-        let (lower_limit, upper_limit) = self.get_current_constraints();
-
         (0..24)
             .map(|offset| {
                 let offset_time = rounded_time + TimeDelta::hours(offset + 1);
                 self.profile
                     .get(&offset_time)
                     .unwrap()
-                    .max(lower_limit)
-                    .min(upper_limit)
                     * POWER_IN_W
             })
             .collect()
