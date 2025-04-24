@@ -184,7 +184,7 @@ impl PvSimulator {
         let profile = csv_reader
             .deserialize()
             .filter_map(|result: Result<ProfileRow, _>| result.ok())
-            .map(|row| (row.timestamp, row.value))
+            .map(|row| (row.timestamp, -row.value))
             .collect();
 
         // Calculate the time delta between simulated and real time.
