@@ -1,4 +1,4 @@
-FROM rust:1.85-slim-bullseye AS chef
+FROM rust:1.91-slim-bullseye AS chef
 
 WORKDIR /app
 RUN apt update

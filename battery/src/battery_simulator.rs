@@ -76,7 +76,12 @@ pub async fn start_mock(mut connection: S2Connection) -> eyre::Result<()> {
 
 const CHARGE_EFFICIENCY: f64 = 1.0;
 const DISCHARGE_EFFICIENCY: f64 = 1.0;
-const CAPACITY_WH: f64 = 20_000.0;
+const CAPACITY_WH: LazyLock<f64> = LazyLock::new(|| {
+    std::env::var("CAPACITY_WH")
+        .map(|c| c.parse())
+        .unwrap_or(Ok(20_000.0))
+        .expect("Could not parse environment variable CAPACITY_WH into float")
+});
 const LEAKAGE_W: f64 = 0.5;
 const INITIAL_FILL_LEVEL: f64 = 0.5;
 
@@ -131,8 +136,8 @@ impl Simulator {
             elements: vec![OperationModeElement {
                 running_costs: None,
                 fill_rate: NumberRange {
-                    start_of_range: 0.5 * CHARGE_EFFICIENCY * ((5000.0 / CAPACITY_WH) / 3600.),
-                    end_of_range: CHARGE_EFFICIENCY * (5000.0 / CAPACITY_WH / 3600.),
+                    start_of_range: 0.5 * CHARGE_EFFICIENCY * ((5000.0 / *CAPACITY_WH) / 3600.),
+                    end_of_range: CHARGE_EFFICIENCY * (5000.0 / *CAPACITY_WH / 3600.),
                 },
                 fill_level_range: NumberRange {
                     start_of_range: 0.0,
@@ -153,8 +158,8 @@ impl Simulator {
             elements: vec![OperationModeElement {
                 running_costs: None,
                 fill_rate: NumberRange {
-                    start_of_range: DISCHARGE_EFFICIENCY * ((5000.0 / CAPACITY_WH) / 3600.),
-                    end_of_range: 0.5 * DISCHARGE_EFFICIENCY * (5000.0 / CAPACITY_WH / 3600.),
+                    start_of_range: DISCHARGE_EFFICIENCY * ((5000.0 / *CAPACITY_WH) / 3600.),
+                    end_of_range: 0.5 * DISCHARGE_EFFICIENCY * (5000.0 / *CAPACITY_WH / 3600.),
                 },
                 fill_level_range: NumberRange {
                     start_of_range: 0.0,
@@ -274,7 +279,7 @@ impl Simulator {
                     start_of_range: 0.0,
                     end_of_range: 1.0,
                 },
-                leakage_rate: (LEAKAGE_W / CAPACITY_WH) / 3600.,
+                leakage_rate: (LEAKAGE_W / *CAPACITY_WH) / 3600.,
             }],
             message_id: Id::generate(),
             valid_from: Utc::now(),
