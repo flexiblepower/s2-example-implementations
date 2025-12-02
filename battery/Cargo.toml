@@ -7,7 +7,7 @@ edition = "2024"
 chrono = "0.4.40"
 eyre = "0.6.12"
 maplit = "1.0.2"
-s2energy = "0.1.1"
+s2energy = "0.2.0"
 tokio = { version = "1.44.1", features = ["full"] }
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"

@@ -1,10 +1,10 @@
 use chrono::{DateTime, Utc};
-use eyre::{Context, Result, eyre};
+use eyre::{Context, Result};
 use maplit::hashmap;
 use s2energy::common::{
     Commodity, CommodityQuantity, ControlType, Duration as S2Duration, Id, InstructionStatus,
     InstructionStatusUpdate, Message, NumberRange, PowerRange, ResourceManagerDetails, Role,
-    Transition,
+    RoleType, Transition,
 };
 use s2energy::frbc::{self, LeakageBehaviourElement, OperationMode, OperationModeElement};
 use s2energy::websockets_json::S2Connection;
@@ -29,10 +29,10 @@ pub async fn start_mock(mut connection: S2Connection) -> eyre::Result<()> {
             provides_forecast: true,
             provides_power_measurement_types: vec![CommodityQuantity::ElectricPower3PhaseSymmetric],
             resource_id: Id::generate(),
-            roles: vec![Role::new(
-                s2energy::common::Commodity::Electricity,
-                s2energy::common::RoleType::EnergyConsumer,
-            )],
+            roles: vec![Role {
+                commodity: Commodity::Electricity,
+                role: RoleType::EnergyConsumer,
+            }],
             serial_number: None,
         })
         .await
@@ -50,7 +50,7 @@ pub async fn start_mock(mut connection: S2Connection) -> eyre::Result<()> {
     let mut update_timer = tokio::time::interval(Duration::from_secs(60));
     loop {
         tokio::select! {
-            message = connection.receive_message() => {
+            message = connection.receive_and_confirm() => {
                 let message = message?;
                 let updates = simulator.process_message(&message)?;
                 for update in updates {
@@ -209,51 +209,48 @@ impl Simulator {
             timers: vec![],
             transitions: vec![
                 // Idle <--> charging
-                Transition::new(
-                    false,
-                    vec![],
-                    OPERATION_MODE_IDLE.clone(),
-                    Id::generate(),
-                    vec![],
-                    OPERATION_MODE_CHARGE.clone(),
-                    None,
-                    None,
-                ),
-                Transition::new(
-                    false,
-                    vec![],
-                    OPERATION_MODE_CHARGE.clone(),
-                    Id::generate(),
-                    vec![],
-                    OPERATION_MODE_IDLE.clone(),
-                    None,
-                    None,
-                ),
+                Transition::builder()
+                    .id(Id::generate())
+                    .from(OPERATION_MODE_IDLE.clone())
+                    .to(OPERATION_MODE_CHARGE.clone())
+                    .start_timers(Vec::new())
+                    .blocking_timers(Vec::new())
+                    .abnormal_condition_only(false)
+                    .build(),
+                Transition::builder()
+                    .id(Id::generate())
+                    .from(OPERATION_MODE_CHARGE.clone())
+                    .to(OPERATION_MODE_IDLE.clone())
+                    .start_timers(Vec::new())
+                    .blocking_timers(Vec::new())
+                    .abnormal_condition_only(false)
+                    .build(),
                 // Idle <--> discharging
-                Transition::new(
-                    false,
-                    vec![],
-                    OPERATION_MODE_IDLE.clone(),
-                    Id::generate(),
-                    vec![],
-                    OPERATION_MODE_DISCHARGE.clone(),
-                    None,
-                    None,
-                ),
-                Transition::new(
-                    false,
-                    vec![],
-                    OPERATION_MODE_DISCHARGE.clone(),
-                    Id::generate(),
-                    vec![],
-                    OPERATION_MODE_IDLE.clone(),
-                    None,
-                    None,
-                ),
+                Transition::builder()
+                    .id(Id::generate())
+                    .from(OPERATION_MODE_IDLE.clone())
+                    .to(OPERATION_MODE_DISCHARGE.clone())
+                    .start_timers(Vec::new())
+                    .blocking_timers(Vec::new())
+                    .abnormal_condition_only(false)
+                    .build(),
+                Transition::builder()
+                    .id(Id::generate())
+                    .from(OPERATION_MODE_DISCHARGE.clone())
+                    .to(OPERATION_MODE_IDLE.clone())
+                    .start_timers(Vec::new())
+                    .blocking_timers(Vec::new())
+                    .abnormal_condition_only(false)
+                    .build(),
             ],
         };
 
-        frbc::SystemDescription::new(vec![actuator_description], storage_description, Utc::now())
+        frbc::SystemDescription {
+            message_id: Id::generate(),
+            actuators: vec![actuator_description],
+            storage: storage_description,
+            valid_from: Utc::now(),
+        }
     }
 
     pub fn update(&mut self) -> frbc::StorageStatus {
@@ -286,8 +283,8 @@ impl Simulator {
 
     pub fn forecast(&self) -> frbc::UsageForecast {
         // This is a home battery (i.e. not an EV battery), so we don't expect any usage
-        frbc::UsageForecast::new(
-            vec![
+        frbc::UsageForecast::builder()
+            .elements(vec![
                 frbc::UsageForecastElement {
                     duration: S2Duration(1000 * 3600),
                     usage_rate_expected: 0.,
@@ -299,9 +296,9 @@ impl Simulator {
                     usage_rate_upper_limit: None,
                 };
                 24
-            ],
-            Utc::now(),
-        )
+            ])
+            .start_time(Utc::now())
+            .build()
     }
 
     pub fn process_message(&mut self, msg: &Message) -> Result<Vec<Message>> {

@@ -1,4 +1,4 @@
-use eyre::{eyre, Context};
+use eyre::{Context, eyre};
 
 mod battery_simulator;
 
@@ -14,7 +14,7 @@ async fn main() -> eyre::Result<()> {
 
     let control_type = std::env::var("CONTROL_TYPE")
         .wrap_err("Could not read control type from environment variable CONTROL_TYPE")?;
-    
+
     match control_type.as_str() {
         "FRBC" => battery_simulator::start_mock(connection).await?,
         other => {
