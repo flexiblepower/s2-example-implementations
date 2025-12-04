@@ -11,10 +11,10 @@ services:
 
   battery:
     build: ./battery
+    env_file: .env # Put AUTH_TOKEN=your_auth_token in .env
     environment:
       # Provide the URL to your CEM here; this should be a WebSocket endpoint
       - CEM_URL=wss://ws.seita.energy/s2
-      - AUTH_TOKEN=J}DLGet><I|]cP/z<CQ4|36WGCbDHsV7N5<(biMN?A9e
       - RUST_BACKTRACE=1
       - RUST_LOG=battery=trace,s2energy=trace
       # Supported values:
