@@ -13,9 +13,7 @@ use std::str::FromStr;
 use std::sync::LazyLock;
 use std::time::Duration;
 
-pub async fn start_mock(mut connection: S2Connection) -> eyre::Result<()> {
-    let mut simulator = Simulator::new();
-
+pub async fn start_mock(mut connection: S2Connection, simulator: &mut Simulator) -> eyre::Result<()> {
     connection
         .initialize_as_rm(ResourceManagerDetails {
             available_control_types: vec![ControlType::FillRateBasedControl],
