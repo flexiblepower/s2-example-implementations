@@ -8,13 +8,16 @@ use s2energy::common::{
 };
 use s2energy::frbc::{self, LeakageBehaviourElement, OperationMode, OperationModeElement};
 use s2energy::websockets_json::S2Connection;
-use uuid::Uuid;
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::LazyLock;
 use std::time::Duration;
+use uuid::Uuid;
 
-pub async fn start_mock(mut connection: S2Connection, simulator: &mut Simulator) -> eyre::Result<()> {
+pub async fn start_mock(
+    mut connection: S2Connection,
+    simulator: &mut Simulator,
+) -> eyre::Result<()> {
     connection
         .initialize_as_rm(ResourceManagerDetails {
             available_control_types: vec![ControlType::FillRateBasedControl],
@@ -24,7 +27,10 @@ pub async fn start_mock(mut connection: S2Connection, simulator: &mut Simulator)
             manufacturer: None,
             message_id: Id::generate(),
             model: None,
-            name: Some(std::env::var("NAME").unwrap_or(Uuid::new_v4().to_string())),
+            name: Some(std::env::var("NAME").unwrap_or(format!(
+                "{}",
+                "Wester-".to_string() + Uuid::new_v4().to_string().split_at(8).0
+            ))),
             provides_forecast: true,
             provides_power_measurement_types: vec![CommodityQuantity::ElectricPower3PhaseSymmetric],
             resource_id: Id::generate(),
