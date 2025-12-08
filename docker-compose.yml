@@ -12,6 +12,9 @@ services:
   battery:
     build: ./battery
     env_file: .env # Put AUTH_TOKEN=your_auth_token in .env
+    deploy:
+      mode: replicated
+      replicas: 2
     environment:
       # Provide the URL to your CEM here; this should be a WebSocket endpoint
       - CEM_URL=wss://ws.seita.energy/s2

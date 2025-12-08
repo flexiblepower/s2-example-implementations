@@ -8,6 +8,7 @@ use s2energy::common::{
 };
 use s2energy::frbc::{self, LeakageBehaviourElement, OperationMode, OperationModeElement};
 use s2energy::websockets_json::S2Connection;
+use uuid::Uuid;
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::LazyLock;
@@ -23,7 +24,7 @@ pub async fn start_mock(mut connection: S2Connection, simulator: &mut Simulator)
             manufacturer: None,
             message_id: Id::generate(),
             model: None,
-            name: None,
+            name: Some(std::env::var("NAME").unwrap_or(Uuid::new_v4().to_string())),
             provides_forecast: true,
             provides_power_measurement_types: vec![CommodityQuantity::ElectricPower3PhaseSymmetric],
             resource_id: Id::generate(),
