@@ -6,13 +6,38 @@ use s2energy::common::{
     InstructionStatusUpdate, Message, NumberRange, PowerRange, ResourceManagerDetails, Role,
     RoleType, Transition,
 };
-use s2energy::frbc::{self, LeakageBehaviourElement, OperationMode, OperationModeElement};
+use s2energy::frbc::{
+    self, ActuatorStatus, LeakageBehaviourElement, OperationMode, OperationModeElement,
+    StorageStatus,
+};
 use s2energy::websockets_json::S2Connection;
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::LazyLock;
 use std::time::Duration;
 use uuid::Uuid;
+
+const CHARGE_EFFICIENCY: f64 = 1.0;
+const DISCHARGE_EFFICIENCY: f64 = 1.0;
+const CAPACITY_WH: LazyLock<f64> = LazyLock::new(|| {
+    std::env::var("CAPACITY_WH")
+        .map(|c| c.parse())
+        .unwrap_or(Ok(20_000.0))
+        .expect("Could not parse environment variable CAPACITY_WH into float")
+});
+const LEAKAGE_W: f64 = 0.5;
+const INITIAL_FILL_LEVEL: f64 = 0.5;
+
+// Generate the IDs for our operation modes.
+// These should be kept consistent during the simulation, so that's why they're const here.
+static OPERATION_MODE_IDLE: LazyLock<Id> =
+    LazyLock::new(|| Id::from_str(&uuid::Uuid::new_v4().to_string()).unwrap());
+static OPERATION_MODE_CHARGE: LazyLock<Id> =
+    LazyLock::new(|| Id::from_str(&uuid::Uuid::new_v4().to_string()).unwrap());
+static OPERATION_MODE_DISCHARGE: LazyLock<Id> =
+    LazyLock::new(|| Id::from_str(&uuid::Uuid::new_v4().to_string()).unwrap());
+static ACTUATOR_1: LazyLock<Id> =
+    LazyLock::new(|| Id::from_str(&uuid::Uuid::new_v4().to_string()).unwrap());
 
 pub async fn start_mock(
     mut connection: S2Connection,
@@ -51,6 +76,18 @@ pub async fn start_mock(
         .send_message(simulator.leakage_behaviour())
         .await?;
     connection.send_message(simulator.forecast()).await?;
+    connection
+        .send_message(
+            ActuatorStatus::builder()
+                .actuator_id(ACTUATOR_1.clone())
+                .active_operation_mode_id(simulator.active_operation_mode.clone())
+                .operation_mode_factor(simulator.operation_mode_factor)
+                .build(),
+        )
+        .await?;
+    connection
+        .send_message(StorageStatus::new(simulator.fill_level))
+        .await?;
 
     let mut update_timer = tokio::time::interval(Duration::from_secs(60));
     loop {
@@ -78,28 +115,6 @@ pub async fn start_mock(
 
     Ok(())
 }
-
-const CHARGE_EFFICIENCY: f64 = 1.0;
-const DISCHARGE_EFFICIENCY: f64 = 1.0;
-const CAPACITY_WH: LazyLock<f64> = LazyLock::new(|| {
-    std::env::var("CAPACITY_WH")
-        .map(|c| c.parse())
-        .unwrap_or(Ok(20_000.0))
-        .expect("Could not parse environment variable CAPACITY_WH into float")
-});
-const LEAKAGE_W: f64 = 0.5;
-const INITIAL_FILL_LEVEL: f64 = 0.5;
-
-// Generate the IDs for our operation modes.
-// These should be kept consistent during the simulation, so that's why they're const here.
-static OPERATION_MODE_IDLE: LazyLock<Id> =
-    LazyLock::new(|| Id::from_str(&uuid::Uuid::new_v4().to_string()).unwrap());
-static OPERATION_MODE_CHARGE: LazyLock<Id> =
-    LazyLock::new(|| Id::from_str(&uuid::Uuid::new_v4().to_string()).unwrap());
-static OPERATION_MODE_DISCHARGE: LazyLock<Id> =
-    LazyLock::new(|| Id::from_str(&uuid::Uuid::new_v4().to_string()).unwrap());
-static ACTUATOR_1: LazyLock<Id> =
-    LazyLock::new(|| Id::from_str(&uuid::Uuid::new_v4().to_string()).unwrap());
 
 pub struct Simulator {
     pub operation_modes: HashMap<Id, OperationMode>,
