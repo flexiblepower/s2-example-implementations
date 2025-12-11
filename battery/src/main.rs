@@ -36,7 +36,16 @@ async fn main() -> eyre::Result<()> {
             .headers_mut()
             .insert("Authorization", format!("Bearer {}", auth_token).parse()?);
 
-        let connection = s2energy::websockets_json::connect_as_client(request).await?;
+        let connection = s2energy::websockets_json::connect_as_client(request).await;
+        let connection = match connection {
+            Ok(connection) => connection,
+            Err(err) => {
+                tracing::warn!("Could not connect as client. Error: {err:?}");
+                tracing::info!("Restarting connection in 10 seconds...");
+                tokio::time::sleep(Duration::from_secs(10)).await;
+                continue;
+            }
+        };
         let result = battery_simulator::start_mock(connection, &mut simulator).await;
         tracing::warn!("Simulator exited; probably disconnected. Result was: {result:?}");
         tracing::info!("Restarting connection in 10 seconds...");
